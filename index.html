@@ -47,10 +47,13 @@ var tk=strm.getVideoTracks()[0];try{await tk.applyConstraints({advanced:[{focusM
 try{var cp=tk.getCapabilities&&tk.getCapabilities();if(cp&&cp.torch){tor.hidden=false;tor.onclick=async function(){var on=tor.getAttribute("aria-pressed")!=="true";try{await tk.applyConstraints({advanced:[{torch:on}]});tor.setAttribute("aria-pressed",on)}catch(e){}}}}catch(e){}
 try{var cp2=tk.getCapabilities&&tk.getCapabilities();if(cp2&&cp2.zoom){var zm=$("zm"),mx=cp2.zoom.max||1,mn=cp2.zoom.min||1;zm.hidden=false;[].forEach.call(zm.querySelectorAll("button"),function(bt){var z=+bt.dataset.z;if(z>mx+.01){bt.hidden=true;return}bt.onclick=function(){try{tk.applyConstraints({advanced:[{zoom:Math.max(mn,Math.min(mx,z))}]});[].forEach.call(zm.querySelectorAll("button"),function(o){o.setAttribute("aria-pressed",o===bt)})}catch(e){}}})}}catch(e){}
 shut.hidden=false;gal.hidden=false;say("Ligado ✓ Aponte à chapa e toque no botão branco.","ok")}
-async function shot(){if(busy)return;if(!can()){say("Sem ligação ao portátil.","bad");return}busy=true;var src=null,big=(v.videoWidth>=1600||v.videoHeight>=1600);
-if(v.videoWidth>0&&big){var c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);src=await new Promise(function(r){c.toBlob(r,"image/jpeg",.92)})}
-if(!src){say("A tirar a foto…");try{var tk=strm&&strm.getVideoTracks()[0];if(tk&&window.ImageCapture){src=await new ImageCapture(tk).takePhoto()}}catch(e){src=null}}
-if(!src&&v.videoWidth>0){var c2=document.createElement("canvas");c2.width=v.videoWidth;c2.height=v.videoHeight;c2.getContext("2d").drawImage(v,0,0);src=await new Promise(function(r){c2.toBlob(r,"image/jpeg",.92)})}
+function vis(){var vw=v.videoWidth,vh=v.videoHeight,ew=v.clientWidth||innerWidth,eh=v.clientHeight||innerHeight,k=Math.max(ew/vw,eh/vh),w=Math.min(vw,ew/k),h=Math.min(vh,eh/k);return{x:Math.round((vw-w)/2),y:Math.round((vh-h)/2),w:Math.round(w),h:Math.round(h),fx:(vw-w)/2/vw,fy:(vh-h)/2/vh,fw:w/vw,fh:h/vh}}
+function frameBlob(){var r=vis(),c=document.createElement("canvas");c.width=r.w;c.height=r.h;c.getContext("2d").drawImage(v,r.x,r.y,r.w,r.h,0,0,r.w,r.h);return new Promise(function(q){c.toBlob(q,"image/jpeg",.92)})}
+async function cropVis(b,r){try{if(r.fw>.985&&r.fh>.985)return b;var bm=await createImageBitmap(b),w=Math.round(bm.width*r.fw),h=Math.round(bm.height*r.fh),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(bm,Math.round(bm.width*r.fx),Math.round(bm.height*r.fy),w,h,0,0,w,h);return await new Promise(function(q){c.toBlob(q,"image/jpeg",.92)})||b}catch(e){return b}}
+async function shot(){if(busy)return;if(!can()){say("Sem ligação ao portátil.","bad");return}busy=true;var src=null,big=(v.videoWidth>=1600||v.videoHeight>=1600),rv=v.videoWidth>0?vis():null;
+if(v.videoWidth>0&&big){src=await frameBlob()}
+if(!src){say("A tirar a foto…");try{var tk=strm&&strm.getVideoTracks()[0];if(tk&&window.ImageCapture){src=await new ImageCapture(tk).takePhoto();if(rv)src=await cropVis(src,rv)}}catch(e){src=null}}
+if(!src&&v.videoWidth>0){src=await frameBlob()}
 try{v.pause()}catch(e){}
 say("Capturada ✓ Pode afastar o telemóvel.","ok");var o=$("ok");o.classList.remove("on");void o.offsetWidth;o.classList.add("on");try{navigator.vibrate&&navigator.vibrate([20,40,20])}catch(e){}
 await send(src);try{v.play()}catch(e){}busy=false}
